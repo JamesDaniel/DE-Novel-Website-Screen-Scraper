@@ -1,4 +1,5 @@
 from twilio.rest import TwilioRestClient
+from bs4 import BeautifulSoup
 import urllib2
 import time
 import os
@@ -8,6 +9,12 @@ def sendSMS(message):
     client.messages.create(to=os.environ['USER_PHONE'], from_=os.environ['TWILIO_PHONE'], body=message)
 def getURL(book,chapter):
     return 'http://www.wuxiaworld.com/desolate-era-index/de-book-'+ str(book) +'-chapter-'+ str(chapter) +'/'
+def txtInPar(text, html):
+    soup = BeautifulSoup(html, 'html.parser')
+    for txt in soup.find_all('p'):
+        if text in txt.text:
+            return True
+    return False
 book = 21
 chapter = 1
 num_sms_sent = 0
@@ -24,10 +31,13 @@ while True:
     request = urllib2.Request(url, headers=hdr)
     response = urllib2.urlopen(request)
     html_doc = response.read()
-    if 'Chapter teaser below!' not in html_doc:
+    if not txtInPar('Chapter teaser below!', html_doc):
+        print 'New Desolate Era released!'
         sendSMS('New Desolate Era released!')
         num_sms_sent = num_sms_sent + 1
         chapter = chapter + 1
+    else:
+        print 'no new chapter yet'
     if num_sms_sent > 4 :
         break
     time.sleep(30)
